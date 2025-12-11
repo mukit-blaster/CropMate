@@ -1,0 +1,62 @@
+{
+  "name": "zapshift-client",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "@tailwindcss/vite": "^4.1.17",
+    "aos": "^2.3.4",
+    "axios": "^1.13.2",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "firebase": "^12.6.0",
+    "leaflet": "^1.9.4",
+    "lucide-react": "^0.554.0",
+    "multer": "^2.0.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-fast-marquee": "^1.6.5",
+    "react-hook-form": "^7.68.0",
+    "react-icons": "^5.5.0",
+    "react-leaflet": "^4.2.1",
+    "react-markdown": "^10.1.0",
+    "react-responsive-carousel": "^3.2.23",
+    "react-router": "^7.10.1",
+    "react-toastify": "^11.0.5",
+    "swiper": "^12.0.3",
+    "tailwindcss": "^4.1.17"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "@vitejs/plugin-react": "^5.1.0",
+    "daisyui": "^5.5.5",
+    "eslint": "^9.39.1",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.4.24",
+    "globals": "^16.5.0",
+    "vite": "^7.2.2"
+  },
+  "description": "[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE) [![Built With React](https://img.shields.io/badge/Built%20With-React-61DAFB?logo=react)](https://react.dev/) [![Styled With TailwindCSS](https://img.shields.io/badge/Styled%20With-TailwindCSS-06B6D4?logo=tailwindcss)](https://tailwindcss.com/) [![Powered By Vite](https://img.shields.io/badge/Powered%20By-Vite-646CFF?logo=vite)](https://vitejs.dev/) [![Map with Leaflet](https://img.shields.io/badge/Map%20with-Leaflet-1A9E75?logo=leaflet)](https://leafletjs.com/)",
+  "main": "eslint.config.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/connectdipta/crop-mate.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/connectdipta/crop-mate/issues"
+  },
+  "homepage": "https://github.com/connectdipta/crop-mate#readme"
+}
