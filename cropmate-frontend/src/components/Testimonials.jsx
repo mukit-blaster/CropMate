@@ -5,22 +5,22 @@ import ReviewCarousel from './ReviewCarousel';
 const Testimonials = () => {
 
     return (
-        <section className="bg-gray-100 py-16 px-4 md:px-8">
+        <section className="bg-gray-100 py-10 px-4 md:px-8">
             <div className="max-w-6xl mx-auto text-center">
-                
-                <div className="mb-8">
-                    <img 
-                        src={testimonialIllustration} 
-                        alt="Boxes on a dolly cart illustration" 
-                        className="h-28 w-auto object-contain mx-auto"
+
+                <div className="mb-4">
+                    <img
+                        src={testimonialIllustration}
+                        alt="Customer review illustration"
+                        className="h-16 w-auto object-contain mx-auto"
                     />
                 </div>
 
-                <h2 className="text-3xl md:text-4xl font-extrabold text-secondary tracking-wide mb-4">
+                <h2 className="text-2xl md:text-3xl font-extrabold text-secondary tracking-wide mb-2">
                     What our customers are saying
                 </h2>
-                <p className="mt-2 textarea-md text-tertiary max-w-2xl mx-auto mb-12">
-                    Enhance posture, mobility, and well-being effortlessly with Posture Pro. Achieve proper alignment, reduce pain, and strengthen your body with ease!
+                <p className="text-sm text-tertiary max-w-xl mx-auto mb-6">
+                    Hear from farmers who've boosted their yield and grown smarter with CropMate.
                 </p>
 
                 <ReviewCarousel />

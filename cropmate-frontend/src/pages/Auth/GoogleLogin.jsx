@@ -2,9 +2,7 @@ import React, { useState } from "react";
 import { FcGoogle } from "react-icons/fc";
 import useAuth from "../../hooks/useAuth";
 import { useLocation, useNavigate } from "react-router";
-import axios from "axios";
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+import api from "../../lib/api";
 
 const GoogleLogin = ({ label = "Login with Google" }) => {
   const { signInGoogle } = useAuth();
@@ -27,10 +25,10 @@ const GoogleLogin = ({ label = "Login with Google" }) => {
           photoURL: result.user.photoURL,
           provider: 'google',
         };
-        await axios.post(`${API_URL}/api/users`, payload);
+        await api.post('/api/users', payload);
 
         // Check if user is admin and redirect accordingly
-        const userResponse = await axios.get(`${API_URL}/api/users/${result.user.uid}`);
+        const userResponse = await api.get(`/api/users/${result.user.uid}`);
         const userRole = userResponse.data.user?.role;
 
         if (userRole === 'admin') {
@@ -55,10 +53,9 @@ const GoogleLogin = ({ label = "Login with Google" }) => {
     <button
       onClick={handleGoogleLogin}
       disabled={loading}
-      className={`w-full bg-[#EAECEF] hover:bg-gray-200 text-gray-800 font-semibold py-3 rounded-lg 
-                 flex items-center justify-center gap-2 transition duration-200 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+      className={`w-full bg-[#EAECEF] hover:bg-gray-200 text-gray-800 text-sm font-semibold py-2.5 rounded-lg flex items-center justify-center gap-2 transition duration-200 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
     >
-      <FcGoogle className="w-5 h-5" />
+      <FcGoogle className="w-4 h-4" />
       {loading ? 'Logging in...' : label}
     </button>
   );

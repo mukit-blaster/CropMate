@@ -44,27 +44,25 @@ const serviceCards = [
 
 const OurServices = () => {
   return (
-    <section className="bg-secondary py-16 px-4 sm:px-6 lg:px-8 rounded-4xl">
-      <div className="max-w-7xl mx-auto text-center mb-12">
-        <h2 className="text-4xl font-extrabold text-white mb-4">Our Services</h2>
-        <p className="textarea-md text-gray-500 max-w-2xl mx-auto">
-          Enjoy smart, efficient farming with real-time insights and zero hassle. From planting seeds to harvesting crops — we optimize your yield, every season.
+    <section className="bg-secondary py-10 px-4 sm:px-6 lg:px-8 rounded-3xl">
+      <div className="max-w-7xl mx-auto text-center mb-8">
+        <h2 className="text-2xl md:text-3xl font-extrabold text-white mb-2">Our Services</h2>
+        <p className="text-sm text-gray-300 max-w-2xl mx-auto">
+          Smart, efficient farming with real-time insights — from planting to harvest.
         </p>
       </div>
 
-      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {serviceCards.map((card, index) => (
           <div
             key={index}
-            className='
-              relative p-8 rounded-xl shadow-lg flex flex-col items-center text-left bg-white hover:scale-105 hover:shadow-xl transition-all duration-300 ease-in-out hover:bg-primary h-70'
+            className="relative p-5 rounded-xl shadow-md flex flex-col items-start text-left bg-white hover:-translate-y-1 hover:shadow-xl transition-all duration-300 ease-in-out hover:bg-primary"
           >
-            <card.image className="text-5xl mb-6 text-secondary" />
-            
-            <h3 className="textarea-xl font-bold text-secondary mb-3">
+            <card.image className="text-3xl mb-3 text-secondary" />
+            <h3 className="text-base font-bold text-secondary mb-1.5">
               {card.title}
             </h3>
-            <p className="text-tertiary textarea-md">
+            <p className="text-tertiary text-xs leading-relaxed">
               {card.description}
             </p>
           </div>

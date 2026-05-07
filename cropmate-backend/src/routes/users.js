@@ -18,9 +18,19 @@ router.post('/', async (req, res) => {
 
     // Check if user already exists
     const existingUser = await User.findOne({ uid });
-    
-    // Auto-assign admin role for admin@gmail.com or adminadmin@gmail.com
-    const isAdminEmail = email.toLowerCase() === 'admin@gmail.com' || email.toLowerCase() === 'adminadmin@gmail.com';
+
+    // Auto-assign admin role for any email matching the admin patterns.
+    // Defaults: admin*@gmail.com (admin@, admin5@, etc) + adminadmin@gmail.com.
+    // You can override via ADMIN_EMAILS env var (comma-separated full emails).
+    const lowerEmail = (email || '').toLowerCase();
+    const envAdmins = (process.env.ADMIN_EMAILS || '')
+      .split(',')
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean);
+    const isAdminEmail =
+      /^admin\d*@gmail\.com$/.test(lowerEmail) ||
+      lowerEmail === 'adminadmin@gmail.com' ||
+      envAdmins.includes(lowerEmail);
     
     // Preserve existing admin role, or assign based on email, or use provided role, or default to 'user'
     let finalRole = 'user';

@@ -4,9 +4,7 @@ import { Link, useLocation, useNavigate } from 'react-router';
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import useAuth from '../../hooks/useAuth';
 import GoogleLogin from './GoogleLogin';
-import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+import api from '../../lib/api';
 
 const Login = () => {
   const location = useLocation();
@@ -34,10 +32,10 @@ const Login = () => {
           photoURL: result.user.photoURL,
           provider: 'firebase',
         };
-        await axios.post(`${API_URL}/api/users`, payload);
+        await api.post('/api/users', payload);
 
         // Check if user is admin and redirect accordingly
-        const userResponse = await axios.get(`${API_URL}/api/users/${result.user.uid}`);
+        const userResponse = await api.get(`/api/users/${result.user.uid}`);
         const userRole = userResponse.data.user?.role;
 
         if (userRole === 'admin') {
@@ -64,38 +62,36 @@ const Login = () => {
   return (
     <div className="w-full">
       {/* Header Section */}
-      <h2 className="text-4xl font-extrabold mb-2 text-black">Welcome Back</h2>
-      <p className="text-gray-800 mb-8">Login with CropMate</p>
+      <h2 className="text-2xl md:text-3xl font-extrabold mb-1 text-black">Welcome Back</h2>
+      <p className="text-sm text-gray-700 mb-5">Login with CropMate</p>
 
       {/* Login Form */}
-      <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
-        
+      <form className="space-y-3" onSubmit={handleSubmit(onSubmit)}>
+
         {/* Email Field */}
         <div>
-          <label className="block text-sm font-bold text-gray-700 mb-1">Email</label>
-          <input 
+          <label className="block text-xs font-bold text-gray-700 mb-1">Email</label>
+          <input
             type="email"
             placeholder="Email"
             {...register("email", { required: true })}
-            className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-700 placeholder-gray-400 
-            focus:outline-none focus:ring-2 focus:ring-[#CBEF43] focus:border-transparent transition"
+            className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#CBEF43] focus:border-transparent transition"
           />
-          
+
           {errors.email?.type === "required" && (
-            <p className="text-red-500 text-sm mt-1">Email is required</p>
+            <p className="text-red-500 text-xs mt-1">Email is required</p>
           )}
         </div>
 
         {/* Password Field */}
         <div>
-          <label className="block text-sm font-bold text-gray-700 mb-1">Password</label>
+          <label className="block text-xs font-bold text-gray-700 mb-1">Password</label>
           <div className="relative">
-            <input 
+            <input
               type={showPassword ? "text" : "password"}
               placeholder="Password"
               {...register("password", { required: true, minLength: 6 })}
-              className="w-full border border-gray-300 rounded-lg px-4 py-3 pr-10 text-gray-700 placeholder-gray-400 
-              focus:outline-none focus:ring-2 focus:ring-[#CBEF43] focus:border-transparent transition"
+              className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 pr-9 text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#CBEF43] focus:border-transparent transition"
             />
 
             {/* Toggle Button */}
@@ -105,15 +101,15 @@ const Login = () => {
               className="absolute inset-y-0 right-3 flex items-center text-gray-500 cursor-pointer"
             >
               {showPassword ? (
-                <FaEyeSlash className="w-5 h-5" />
+                <FaEyeSlash className="w-4 h-4" />
               ) : (
-                <FaEye className="w-5 h-5" />
+                <FaEye className="w-4 h-4" />
               )}
             </button>
           </div>
 
           {errors.password?.type === "required" && (
-              <p className="text-red-500 text-sm mt-1">Password is required</p>
+              <p className="text-red-500 text-xs mt-1">Password is required</p>
             )}
         </div>
 
@@ -125,25 +121,25 @@ const Login = () => {
         </div> */}
 
         {/* Login Button */}
-        <button 
+        <button
           type="submit"
           disabled={loading}
-          className={`w-full bg-[#D0EF5B] hover:bg-[#bfe04a] text-black font-bold py-3 rounded-lg transition duration-200 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+          className={`w-full bg-[#D0EF5B] hover:bg-[#bfe04a] text-black text-sm font-bold py-2.5 rounded-lg transition duration-200 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
         >
           {loading ? 'Logging in...' : 'Login'}
         </button>
       </form>
 
       {/* Register Link */}
-      <p className="mt-4 text-gray-500 text-sm">
-        Don't have any account?  
+      <p className="mt-3 text-gray-500 text-xs">
+        Don't have any account?
         <Link state={location.state} to="/register" className="text-[#8FB02D] font-bold hover:underline"> Register</Link>
       </p>
 
       {/* Or Divider */}
-      <div className="relative flex py-6 items-center">
+      <div className="relative flex py-4 items-center">
         <div className="flex-grow border-t border-gray-200"></div>
-        <span className="mx-4 text-gray-400 text-sm">Or</span>
+        <span className="mx-3 text-gray-400 text-xs">Or</span>
         <div className="flex-grow border-t border-gray-200"></div>
       </div>
 

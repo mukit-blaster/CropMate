@@ -1,11 +1,16 @@
 import React from 'react';
 import logo from '../assets/logo.png';
 
-const Logo = () => {
+const Logo = ({ variant = 'default' }) => {
+    const isLight = variant === 'light';
+    const imgSize = isLight ? 'h-8' : 'h-10';
+    const textSize = isLight ? 'text-xl md:text-2xl' : 'text-2xl md:text-3xl';
     return (
-        <div className="flex items-end active:scale-95 transition-transform duration-150">
-            <img src={logo} alt="logo" />
-            <h3 className="text-3xl font-extrabold -ms-3.5 text-green-600">Crop<span className='text-yellow-400'>Mate</span></h3>
+        <div className="inline-flex items-end active:scale-95 transition-transform duration-150 select-none">
+            <img src={logo} alt="CropMate logo" className={`${imgSize} w-auto`} />
+            <h3 className={`${textSize} font-extrabold -ms-2 ${isLight ? 'text-white' : 'text-secondary'}`}>
+                Crop<span className="text-primary">Mate</span>
+            </h3>
         </div>
     );
 };

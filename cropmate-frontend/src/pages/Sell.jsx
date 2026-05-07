@@ -14,9 +14,8 @@ import {
   FaChevronRight,
   FaInfoCircle,
 } from "react-icons/fa";
-import axios from "axios";
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+import api from "../lib/api";
+import { FALLBACK_IMAGE, handleImageError } from "../lib/image";
 
 const Sell = () => {
   const [activeTab, setActiveTab] = useState("medicine");
@@ -48,7 +47,7 @@ const Sell = () => {
     try {
       setLoading(true);
       const type = activeTab === "medicine" ? "medicine" : "seeds";
-      const response = await axios.get(`${API_URL}/api/sell`, {
+      const response = await api.get(`/api/sell`, {
         params: { type, search: searchTerm || undefined }
       });
       if (response.data && response.data.items) {
@@ -149,40 +148,48 @@ const Sell = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-12 font-sans relative">
-      {/* Cart Button */}
+      {/* Floating Cart Button (bottom-right, never overlaps navbar) */}
       <button
         onClick={() => setIsMyCartOpen(true)}
-        className="fixed top-6 right-6 bg-green-600 text-white px-4 py-2 rounded-full flex items-center gap-2 font-bold shadow-lg z-50 hover:bg-green-700 transition transform hover:scale-105"
+        className="fixed bottom-5 right-5 bg-green-600 text-white pl-4 pr-5 py-2.5 rounded-full flex items-center gap-2 text-sm font-bold shadow-xl z-40 hover:bg-green-700 transition transform hover:scale-105 active:scale-95"
+        aria-label="Open my cart"
       >
-        <FaShoppingCart /> My Cart ({cartItems.length})
+        <span className="relative">
+          <FaShoppingCart className="text-base" />
+          {cartItems.length > 0 && (
+            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center border border-white">
+              {cartItems.length}
+            </span>
+          )}
+        </span>
+        My Cart
       </button>
 
       {/* Header */}
-      <div className="bg-gradient-to-br from-green-700 via-green-600 to-emerald-500 text-white py-16 px-4 rounded-b-[3rem] shadow-xl mb-10">
+      <div className="bg-gradient-to-br from-green-700 via-green-600 to-emerald-500 text-white py-8 px-4 rounded-b-3xl shadow-md mb-6">
         <div className="max-w-7xl mx-auto text-center">
-          <h1 className="text-4xl md:text-6xl font-extrabold mb-6 drop-shadow-md">
+          <h1 className="text-2xl md:text-3xl font-extrabold mb-2 drop-shadow-sm">
             Crop Essentials Marketplace
           </h1>
-          <p className="text-lg md:text-xl text-green-50 max-w-3xl mx-auto">
-            Find high-quality seeds and trusted crop medicines — all in one
-            platform.
+          <p className="text-sm text-green-50 max-w-2xl mx-auto">
+            High-quality seeds and trusted crop medicines — all in one platform.
           </p>
         </div>
       </div>
 
       {/* Tabs + Search */}
-      <div className="max-w-7xl mx-auto px-4 mb-10">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+      <div className="max-w-7xl mx-auto px-4 mb-6">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           {/* Tabs */}
-          <div className="inline-flex bg-white shadow-md p-1.5 rounded-full border">
+          <div className="inline-flex bg-white shadow-sm p-1 rounded-full border">
             <button
               onClick={() => {
                 setActiveTab("medicine");
                 fetchItems();
               }}
-              className={`px-8 py-3 rounded-full font-bold flex items-center gap-2 transition-all ${
+              className={`px-5 py-2 rounded-full font-semibold text-sm flex items-center gap-2 transition-all ${
                 activeTab === "medicine"
-                  ? "bg-green-600 text-white shadow-lg"
+                  ? "bg-green-600 text-white shadow"
                   : "text-gray-500 hover:bg-gray-100"
               }`}
             >
@@ -193,9 +200,9 @@ const Sell = () => {
                 setActiveTab("seeds");
                 fetchItems();
               }}
-              className={`px-8 py-3 rounded-full font-bold flex items-center gap-2 transition-all ${
+              className={`px-5 py-2 rounded-full font-semibold text-sm flex items-center gap-2 transition-all ${
                 activeTab === "seeds"
-                  ? "bg-green-600 text-white shadow-lg"
+                  ? "bg-green-600 text-white shadow"
                   : "text-gray-500 hover:bg-gray-100"
               }`}
             >
@@ -204,17 +211,17 @@ const Sell = () => {
           </div>
 
           {/* Search */}
-          <div className="relative w-full md:w-96">
+          <div className="relative w-full md:w-80">
             <input
               type="text"
               placeholder={`Search ${activeTab}...`}
-              className="w-full py-3 pl-12 pr-4 border rounded-full shadow-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
+              className="w-full py-2 pl-9 pr-4 text-sm border rounded-full shadow-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-            <FaSearch className="absolute left-4 top-3 text-gray-400" />
-            <button className="absolute right-4 top-2 p-2 bg-gray-100 rounded-full hover:bg-green-100 transition">
-              <FaFilter />
+            <FaSearch className="absolute left-3 top-2.5 text-gray-400 text-sm" />
+            <button className="absolute right-2 top-1.5 p-1.5 bg-gray-100 rounded-full hover:bg-green-100 transition">
+              <FaFilter className="text-xs" />
             </button>
           </div>
         </div>
@@ -227,7 +234,7 @@ const Sell = () => {
             <h3 className="text-xl">No items found matching your search.</h3>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
             {currentItems.map((item) => {
               const added = isInCart(item._id || item.id);
               const unavailable = !item.available || added;
@@ -235,19 +242,21 @@ const Sell = () => {
               return (
                 <div
                   key={item._id || item.id}
-                  className="bg-white rounded-2xl shadow-md hover:shadow-2xl overflow-hidden border transition-all duration-300"
+                  className="bg-white rounded-xl shadow-sm hover:shadow-lg overflow-hidden border transition-all duration-300"
                 >
-                  <div className="h-64 relative group">
+                  <div className="h-40 relative group bg-gray-100">
                     <img
-                      src={item.image}
+                      src={item.image || FALLBACK_IMAGE}
                       alt={item.name}
+                      loading="lazy"
+                      onError={handleImageError}
                       className={`h-full w-full object-cover transition-transform duration-500 group-hover:scale-110 ${
                         unavailable ? "grayscale opacity-80" : ""
                       }`}
                     />
                     {/* Status */}
                     <span
-                      className={`absolute top-4 left-4 px-3 py-1 text-xs rounded-full font-bold text-white shadow-sm ${
+                      className={`absolute top-2 left-2 px-2 py-0.5 text-[10px] rounded-full font-bold text-white shadow-sm ${
                         added
                           ? "bg-blue-600"
                           : item.available
@@ -256,32 +265,32 @@ const Sell = () => {
                       }`}
                     >
                       {added
-                        ? "Added to Cart"
+                        ? "In Cart"
                         : item.available
                         ? "Available"
                         : "Out of Stock"}
                     </span>
                     {/* Rating */}
-                    <span className="absolute top-4 right-4 bg-white px-3 py-1 text-sm rounded-lg font-bold shadow flex items-center gap-1">
-                      <FaStar className="text-yellow-400" /> {item.rating || 0}
+                    <span className="absolute top-2 right-2 bg-white px-2 py-0.5 text-[11px] rounded-md font-bold shadow flex items-center gap-1">
+                      <FaStar className="text-yellow-400 text-[10px]" /> {item.rating || 0}
                     </span>
                   </div>
 
-                  <div className="p-5">
-                    <h3 className="font-bold text-lg truncate text-gray-800">
+                  <div className="p-3">
+                    <h3 className="font-bold text-sm truncate text-gray-800">
                       {item.name}
                     </h3>
-                    <p className="text-green-600 font-semibold text-xs tracking-wide uppercase mb-2">
+                    <p className="text-green-600 font-semibold text-[10px] tracking-wide uppercase mb-1">
                       {item.itemType}
                     </p>
 
-                    <div className="flex items-center gap-2 text-gray-500 text-sm mb-4">
-                      <FaMapMarkerAlt className="text-green-600" />{" "}
+                    <div className="flex items-center gap-1 text-gray-500 text-xs mb-2">
+                      <FaMapMarkerAlt className="text-green-600 text-[10px]" />{" "}
                       {item.location}
                     </div>
 
-                    <div className="flex justify-between items-center border-t pt-4">
-                      <p className="text-2xl font-bold text-gray-900">
+                    <div className="flex justify-between items-center border-t pt-2">
+                      <p className="text-lg font-bold text-gray-900">
                         {item.price}
                       </p>
                     </div>
@@ -289,10 +298,10 @@ const Sell = () => {
                     <button
                       onClick={() => openModal(item)}
                       disabled={unavailable}
-                      className={`w-full mt-4 py-3 rounded-xl font-bold text-white transition-all shadow-md ${
+                      className={`w-full mt-2 py-2 rounded-lg text-xs font-bold text-white transition-all ${
                         unavailable
                           ? "bg-gray-400 cursor-not-allowed"
-                          : "bg-green-600 hover:bg-green-700 hover:shadow-lg transform hover:-translate-y-0.5"
+                          : "bg-green-600 hover:bg-green-700"
                       }`}
                     >
                       {added ? "Already in Cart" : "View & Add"}
@@ -356,9 +365,10 @@ const Sell = () => {
                 </h2>
                 <div className="flex items-start gap-4 mb-6 bg-green-50 p-4 rounded-xl border border-green-100">
                   <img
-                    src={selectedItem.image}
-                    className="w-20 h-20 rounded-lg object-cover shadow-sm"
-                    alt=""
+                    src={selectedItem.image || FALLBACK_IMAGE}
+                    onError={handleImageError}
+                    className="w-20 h-20 rounded-lg object-cover shadow-sm bg-gray-100"
+                    alt={selectedItem?.name || ''}
                   />
                   <div>
                     <p className="font-bold text-lg text-gray-900 leading-tight mb-1">
@@ -477,9 +487,10 @@ const Sell = () => {
                       className="flex items-center bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition"
                     >
                       <img
-                        src={c.image}
+                        src={c.image || FALLBACK_IMAGE}
                         alt={c.name}
-                        className="w-20 h-20 rounded-lg mr-5 object-cover border"
+                        onError={handleImageError}
+                        className="w-20 h-20 rounded-lg mr-5 object-cover border bg-gray-100"
                       />
 
                       <div className="flex-grow">

@@ -13,6 +13,7 @@ import DiseaseDetector from "../pages/DiseaseDetector";
 import AdminDashboard from "../pages/AdminDashboard";
 import Knowledge from "../pages/Knowledge";
 import Sell from "../pages/Sell";
+import NotFound from "../pages/NotFound";
 
 export const router = createBrowserRouter([
   {
@@ -51,6 +52,10 @@ export const router = createBrowserRouter([
         {
           path:"/sell",
           element: <Sell></Sell>
+        },
+        {
+          path: "*",
+          element: <NotFound />
         }
     ]
   },

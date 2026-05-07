@@ -2,9 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import Logo from "./Logo";
 import { Link, NavLink } from "react-router";
 import useAuth from "../hooks/useAuth";
-import axios from "axios";
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+import api from "../lib/api";
 
 const Navbar = () => {
   const [open, setOpen] = useState(false);
@@ -19,7 +17,7 @@ const Navbar = () => {
     const checkUserRole = async () => {
       if (user?.uid) {
         try {
-          const response = await axios.get(`${API_URL}/api/users/${user.uid}`);
+          const response = await api.get(`/api/users/${user.uid}`);
           setUserRole(response.data.user?.role);
         } catch (error) {
           console.error('Error fetching user role:', error);

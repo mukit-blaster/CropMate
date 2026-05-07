@@ -5,9 +5,7 @@ import {
   FaCalendarAlt, FaPhone, FaClipboardList 
 } from 'react-icons/fa';
 import useAuth from '../hooks/useAuth';
-import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+import api from '../lib/api';
 
 const Hire = () => {
     const { user } = useAuth();
@@ -243,7 +241,7 @@ const Hire = () => {
 
     const loadUserBookings = async () => {
         try {
-            const response = await axios.get(`${API_URL}/api/bookings/user/${user.uid}`);
+            const response = await api.get(`/api/bookings/user/${user.uid}`);
             setBookedItems(response.data.bookings || []);
         } catch (error) {
             console.error('Error loading bookings:', error);
@@ -269,7 +267,7 @@ const Hire = () => {
                 duration: formData.duration,
             };
 
-            await axios.post(`${API_URL}/api/bookings`, bookingData);
+            await api.post('/api/bookings', bookingData);
             
             // Reload bookings
             await loadUserBookings();
@@ -291,70 +289,77 @@ const Hire = () => {
 
     return (
         <div className="min-h-screen bg-gray-50 pb-12 font-sans relative">
-            <div className="bg-gradient-to-br from-green-700 via-green-600 to-emerald-500 text-white py-16 px-4 mb-10 rounded-b-[3rem] shadow-xl relative">
-                
-                {/* My Hires Button */}
-                <button 
-                    onClick={() => setIsMyHiresOpen(true)}
-                    className="absolute top-6 right-6 md:right-20 bg-white/20 backdrop-blur-md hover:bg-white/30 text-white px-4 py-2 rounded-full flex items-center gap-2 text-sm font-bold transition-all border border-white/30"
-                >
-                    <FaClipboardList /> My Hires ({bookedItems.length})
-                </button>
+            {/* Floating My Hires Button (bottom-right) */}
+            <button
+                onClick={() => setIsMyHiresOpen(true)}
+                className="fixed bottom-5 right-5 bg-green-700 text-white pl-4 pr-5 py-2.5 rounded-full flex items-center gap-2 text-sm font-bold shadow-xl z-40 hover:bg-green-800 transition transform hover:scale-105 active:scale-95"
+                aria-label="Open my hires"
+            >
+                <span className="relative">
+                    <FaClipboardList className="text-base" />
+                    {bookedItems.length > 0 && (
+                        <span className="absolute -top-2 -right-2 bg-yellow-400 text-secondary text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center border border-white">
+                            {bookedItems.length}
+                        </span>
+                    )}
+                </span>
+                My Hires
+            </button>
+
+            <div className="bg-gradient-to-br from-green-700 via-green-600 to-emerald-500 text-white py-8 px-4 mb-6 rounded-b-3xl shadow-md relative">
 
                 <div className="max-w-7xl mx-auto text-center">
-                    <h1 className="text-4xl md:text-6xl font-extrabold mb-6 tracking-tight drop-shadow-sm">
+                    <h1 className="text-2xl md:text-3xl font-extrabold mb-2 tracking-tight drop-shadow-sm">
                         Find Your Farming Force
                     </h1>
-                    <p className="text-lg md:text-xl text-green-50 max-w-2xl mx-auto font-light">
-                        Connect with top-rated machinery and skilled hands in your region. 
-                        Efficiency starts here.
+                    <p className="text-sm text-green-50 max-w-xl mx-auto">
+                        Connect with top-rated machinery and skilled hands in your region.
                     </p>
                 </div>
             </div>
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex flex-col md:flex-row justify-between items-center mb-10 space-y-6 md:space-y-0">
-                    
-                    <div className="bg-white p-1.5 rounded-full shadow-md border border-gray-100 inline-flex relative">
+                <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+
+                    <div className="bg-white p-1 rounded-full shadow-sm border border-gray-100 inline-flex relative">
                         <button
                             onClick={() => setActiveTab('machines')}
-                            className={`relative z-10 px-8 py-3 rounded-full text-sm font-bold transition-all duration-300 flex items-center gap-2 ${
-                                activeTab === 'machines' 
-                                ? 'text-white bg-green-600 shadow-lg transform scale-105' 
+                            className={`px-5 py-2 rounded-full text-xs font-bold transition-all duration-300 flex items-center gap-1.5 ${
+                                activeTab === 'machines'
+                                ? 'text-white bg-green-600 shadow'
                                 : 'text-gray-500 hover:text-green-600 hover:bg-gray-50'
                             }`}
                         >
-                            <FaTractor className="text-lg" /> Machinery
+                            <FaTractor /> Machinery
                         </button>
                         <button
                             onClick={() => setActiveTab('labor')}
-                            className={`relative z-10 px-8 py-3 rounded-full text-sm font-bold transition-all duration-300 flex items-center gap-2 ${
-                                activeTab === 'labor' 
-                                ? 'text-white bg-green-600 shadow-lg transform scale-105' 
+                            className={`px-5 py-2 rounded-full text-xs font-bold transition-all duration-300 flex items-center gap-1.5 ${
+                                activeTab === 'labor'
+                                ? 'text-white bg-green-600 shadow'
                                 : 'text-gray-500 hover:text-green-600 hover:bg-gray-50'
                             }`}
                         >
-                            <FaUserFriends className="text-lg" /> Skilled Labor
+                            <FaUserFriends /> Skilled Labor
                         </button>
                     </div>
 
-                 
-                    <div className="relative w-full md:w-96 group">
-                        <input 
-                            type="text" 
+                    <div className="relative w-full md:w-80 group">
+                        <input
+                            type="text"
                             placeholder={`Search for ${activeTab}...`}
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-12 pr-4 py-3 rounded-full border border-gray-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                            className="w-full pl-9 pr-4 py-2 text-sm rounded-full border border-gray-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
                         />
-                        <FaSearch className="absolute left-4 top-3.5 text-gray-400 group-focus-within:text-green-500 transition-colors" />
-                        <button className="absolute right-2 top-1.5 p-2 bg-gray-100 rounded-full text-gray-600 hover:bg-green-100 hover:text-green-600 transition-colors">
-                            <FaFilter />
+                        <FaSearch className="absolute left-3 top-2.5 text-gray-400 text-sm group-focus-within:text-green-500 transition-colors" />
+                        <button className="absolute right-2 top-1.5 p-1.5 bg-gray-100 rounded-full text-gray-600 hover:bg-green-100 hover:text-green-600 transition-colors">
+                            <FaFilter className="text-xs" />
                         </button>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                     {displayData.length > 0 ? (
                         displayData.map((item) => {
                             const booked = isBooked(item.id);
@@ -365,69 +370,66 @@ const Hire = () => {
                                     key={item.id} 
                                     className="group bg-white rounded-2xl shadow-md hover:shadow-2xl transition-all duration-300 border border-gray-100 overflow-hidden flex flex-col"
                                 >
-                                    <div className="h-72 w-full relative overflow-hidden">
-                                        <img 
-                                            src={item.image} 
-                                            alt={item.name} 
+                                    <div className="h-44 w-full relative overflow-hidden">
+                                        <img
+                                            src={item.image}
+                                            alt={item.name}
                                             className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 ${unavailable ? 'grayscale' : ''}`}
                                         />
                                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                                        
-                                        <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-lg text-sm font-bold shadow-sm flex items-center gap-1 text-gray-800">
-                                            <FaStar className="text-yellow-400" /> {item.rating}
+
+                                        <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm px-2 py-0.5 rounded-md text-[11px] font-bold shadow-sm flex items-center gap-1 text-gray-800">
+                                            <FaStar className="text-yellow-400 text-[10px]" /> {item.rating}
                                         </div>
-                                        
-                                    
-                                        <div className={`absolute top-4 left-4 px-3 py-1 rounded-full text-xs font-bold text-white shadow-sm ${
+
+                                        <div className={`absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-bold text-white shadow-sm ${
                                             booked ? 'bg-blue-600' : (item.available ? 'bg-green-500' : 'bg-red-500')
                                         }`}>
                                             {booked ? 'Hired by You' : (item.available ? 'Available' : 'Booked')}
                                         </div>
                                     </div>
 
-                                    <div className="p-5 flex-grow flex flex-col justify-between">
+                                    <div className="p-3 flex-grow flex flex-col justify-between">
                                         <div>
-                                            <div className="flex justify-between items-start mb-1">
-                                                <h3 className="text-lg font-bold text-gray-800 leading-tight">{item.name}</h3>
-                                            </div>
-                                            <p className="text-sm text-green-600 font-semibold mb-3 uppercase tracking-wide">
+                                            <h3 className="text-sm font-bold text-gray-800 leading-tight truncate">{item.name}</h3>
+                                            <p className="text-[10px] text-green-600 font-semibold mb-1.5 uppercase tracking-wide">
                                                 {activeTab === 'machines' ? item.type : item.skill}
                                             </p>
-                                            
-                                            <div className="flex items-center gap-2 text-gray-500 text-sm mb-4">
-                                                <FaMapMarkerAlt className="text-green-500" /> {item.location}
+
+                                            <div className="flex items-center gap-1 text-gray-500 text-xs mb-2">
+                                                <FaMapMarkerAlt className="text-green-500 text-[10px]" /> {item.location}
                                             </div>
                                         </div>
 
                                         <div>
-                                            <div className="flex justify-between items-end mb-4 border-t pt-3 border-gray-100">
+                                            <div className="flex justify-between items-end mb-2 border-t pt-2 border-gray-100">
                                                 <div>
-                                                    <p className="text-xs text-gray-400">Rate</p>
-                                                    <p className="text-xl font-extrabold text-gray-900">{item.price}</p>
+                                                    <p className="text-[10px] text-gray-400">Rate</p>
+                                                    <p className="text-base font-extrabold text-gray-900">{item.price}</p>
                                                 </div>
                                                 {activeTab === 'labor' && (
                                                     <div className="text-right">
-                                                        <p className="text-xs text-gray-400">Experience</p>
-                                                        <p className="text-sm font-medium text-gray-700">{item.experience}</p>
+                                                        <p className="text-[10px] text-gray-400">Experience</p>
+                                                        <p className="text-xs font-medium text-gray-700">{item.experience}</p>
                                                     </div>
                                                 )}
                                             </div>
 
-                                            <button 
+                                            <button
                                                 onClick={() => openModal(item)}
                                                 disabled={unavailable}
-                                                className={`w-full py-3 rounded-xl font-bold text-white flex items-center justify-center gap-2 transition-all duration-300 shadow-lg
-                                                    ${unavailable 
-                                                        ? 'bg-gray-400 cursor-not-allowed' 
+                                                className={`w-full py-2 rounded-lg text-xs font-bold text-white flex items-center justify-center gap-1.5 transition-all duration-300
+                                                    ${unavailable
+                                                        ? 'bg-gray-400 cursor-not-allowed'
                                                         : 'bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 active:scale-95'
                                                     }`}
                                             >
                                                 {booked ? (
                                                     'Already Hired'
                                                 ) : (activeTab === 'machines' && !item.available) ? (
-                                                    'Currently Unavailable'
+                                                    'Unavailable'
                                                 ) : (
-                                                    <> <FaClock /> Book Now </>
+                                                    <> <FaClock className="text-[10px]" /> Book Now </>
                                                 )}
                                             </button>
                                         </div>

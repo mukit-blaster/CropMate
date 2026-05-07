@@ -29,55 +29,49 @@ const features = [
 
 const DeliveryFeatures = () => {
   return (
-    <section className="bg-gray-50 py-12 px-4 md:px-8 lg:px-16">
+    <section className="bg-gray-50 py-6 px-4 md:px-8 lg:px-12 rounded-2xl">
       <div className="max-w-6xl mx-auto">
-        
-        <div className="border-t-2 border-dashed border-gray-300 mb-10"></div>
+
+        <div className="border-t-2 border-dashed border-gray-300 mb-5"></div>
 
         {features.map((feature, index) => (
           <div
             key={index}
-            className={`
-              my-4 relative flex flex-col md:flex-row items-center md:items-start 
-              bg-white p-6 md:p-0 rounded-xl shadow-md transition-shadow duration-300
-              
-              ${index > 0 ? 'mt-8' : ''} 
-            `}
-            style={{ borderRadius: '15px', overflow: 'hidden' }}
+            className={`my-2 relative flex flex-col md:flex-row items-center md:items-start bg-white p-3 md:p-0 rounded-lg shadow-sm transition-shadow duration-300 ${index > 0 ? 'mt-4' : ''}`}
+            style={{ borderRadius: '12px', overflow: 'hidden' }}
           >
-            
-            <div 
-              className="flex-shrink-0 w-full md:w-1/4 mb-4 md:mb-0 flex justify-center items-center py-6 md:py-10 
-                       md:border-r-2 md:border-dashed md:border-gray-300"
+
+            <div
+              className="flex-shrink-0 w-full md:w-1/4 mb-2 md:mb-0 flex justify-center items-center py-3 md:py-5 md:border-r-2 md:border-dashed md:border-gray-300"
             >
               {feature.image && (
                 <img
                   src={feature.image}
                   alt={feature.title}
-                  className="h-28 w-auto object-contain"
+                  className="h-16 w-auto object-contain"
                 />
               )}
               {feature.IconComponent && (
-                <feature.IconComponent className="text-8xl text-secondary opacity-75" />
+                <feature.IconComponent className="text-5xl text-secondary opacity-75" />
               )}
             </div>
 
-            <div className="md:pl-8 flex-grow w-full md:w-3/4 text-center md:text-left p-6 md:p-10 pt-0 md:pt-10">
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">
+            <div className="md:pl-6 flex-grow w-full md:w-3/4 text-center md:text-left px-4 py-3 md:py-5">
+              <h3 className="text-base font-semibold text-gray-800 mb-1">
                 {feature.title}
               </h3>
-              <p className="text-gray-600 leading-relaxed">
+              <p className="text-xs text-gray-600 leading-relaxed">
                 {feature.description}
               </p>
             </div>
-            
+
             {index < features.length - 1 && (
-                <div className="absolute bottom-[-1.5rem] left-0 right-0 h-px mx-auto max-w-[90%] border-t border-gray-200"></div>
+                <div className="absolute bottom-[-0.75rem] left-0 right-0 h-px mx-auto max-w-[90%] border-t border-gray-200"></div>
             )}
           </div>
         ))}
 
-        <div className="border-b-2 border-dashed border-gray-300 mt-10"></div>
+        <div className="border-b-2 border-dashed border-gray-300 mt-5"></div>
 
       </div>
     </section>

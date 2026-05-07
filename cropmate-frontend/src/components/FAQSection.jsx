@@ -66,54 +66,42 @@ const FAQSection = () => {
   const isShowMoreVisible = visibleCount < faqData.length;
 
   return (
-    <section className="bg-gray-50 py-16 px-4 md:px-8">
-      <div className="max-w-4xl mx-auto">
+    <section className="bg-gray-50 py-10 px-4 md:px-8">
+      <div className="max-w-3xl mx-auto">
 
-        <div className="text-center mb-10">
-          <h2 className="text-3xl md:text-4xl font-extrabold text-secondary tracking-wide">
-            Frequently Asked Question (FAQ)
+        <div className="text-center mb-6">
+          <h2 className="text-2xl md:text-3xl font-extrabold text-secondary tracking-wide">
+            Frequently Asked Questions
           </h2>
-          <p className="mt-4 text-gray-600 max-w-2xl mx-auto">
-            Enhance crop yields, farm efficiency, and profitability effortlessly with CropMate. Achieve smarter farming, reduce operational hassle, and maximize your harvest with ease!
+          <p className="mt-2 text-sm text-gray-600 max-w-xl mx-auto">
+            Smarter farming, reduced hassle, maximized harvests — answers to common questions.
           </p>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-2.5">
           {faqData.slice(0, visibleCount).map((item, index) => {
             const isOpen = openIndex === index;
             return (
               <div
                 key={index}
-                className={`
-                  bg-white rounded-lg shadow-sm overflow-hidden border-2
-                  ${isOpen ? 'border-teal-300' : 'border-gray-200'}
-                  transition-all duration-300 transform group
-                  opacity-100 translate-y-0
-                `}
-                // REMOVED data-aos="fade-up" from here
+                className={`bg-white rounded-lg shadow-sm overflow-hidden border ${isOpen ? 'border-teal-300' : 'border-gray-200'} transition-all duration-300`}
               >
                 <button
-                  className={`
-                    w-full flex justify-between items-center p-5 text-left font-semibold
-                    ${isOpen ? 'text-teal-700 bg-teal-50' : 'text-gray-700 hover:bg-gray-50'}
-                  `}
+                  className={`w-full flex justify-between items-center px-4 py-3 text-left text-sm font-semibold ${isOpen ? 'text-teal-700 bg-teal-50' : 'text-gray-700 hover:bg-gray-50'}`}
                   onClick={() => toggleFAQ(index)}
                 >
                   {item.question}
                   {isOpen ? (
-                    <FiChevronUp className="text-xl transition-transform duration-300" />
+                    <FiChevronUp className="text-base transition-transform duration-300" />
                   ) : (
-                    <FiChevronDown className="text-xl transition-transform duration-300" />
+                    <FiChevronDown className="text-base transition-transform duration-300" />
                   )}
                 </button>
 
                 <div
-                  className={`
-                    transition-all duration-500 ease-in-out overflow-hidden
-                    ${isOpen ? 'max-h-96 opacity-100 p-5 pt-0' : 'max-h-0 opacity-0 p-0'}
-                  `}
+                  className={`transition-all duration-500 ease-in-out overflow-hidden ${isOpen ? 'max-h-80 opacity-100 px-4 pb-3' : 'max-h-0 opacity-0 p-0'}`}
                 >
-                  <p className="text-tertiary text-sm border-t border-gray-200 pt-5">
+                  <p className="text-tertiary text-xs border-t border-gray-200 pt-3 leading-relaxed">
                     {item.answer}
                   </p>
                 </div>
@@ -122,13 +110,13 @@ const FAQSection = () => {
           })}
         </div>
         {isShowMoreVisible && (
-          <div className="flex justify-center mt-12 transition-opacity duration-500">
+          <div className="flex justify-center mt-6">
             <button
               onClick={handleShowMore}
-              className="flex items-center gap-2 px-8 py-3 rounded-full text-lg font-semibold text-gray-800 transition-shadow duration-300 shadow-md hover:shadow-lg"
+              className="flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-semibold text-gray-800 shadow-sm hover:shadow-md transition-shadow"
               style={{ backgroundColor: '#B8EA5C' }}
             >
-              See More FAQ's
+              See More FAQs
               <FiArrowRight />
             </button>
           </div>

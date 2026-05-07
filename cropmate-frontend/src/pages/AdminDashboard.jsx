@@ -1,15 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  FaUsers, FaClipboardList, FaChartLine, FaSeedling, 
+﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
+import {
+  FaUsers, FaClipboardList, FaChartLine, FaSeedling,
   FaBug, FaCheckCircle, FaClock, FaTimes, FaSearch,
   FaEye, FaEdit, FaTrash, FaUserShield, FaBook, FaShoppingBag,
-  FaArrowUp, FaArrowDown, FaFilter, FaBars, FaTimes as FaClose
+  FaArrowUp, FaArrowDown, FaFilter, FaBars, FaTimes as FaClose,
+  FaSyncAlt
 } from 'react-icons/fa';
 import useAuth from '../hooks/useAuth';
-import axios from 'axios';
+import api from '../lib/api';
 import { useNavigate } from 'react-router';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+const REFRESH_INTERVAL_MS = 20000;
 
 const AdminDashboard = () => {
   const { user } = useAuth();
@@ -27,6 +28,11 @@ const AdminDashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const isMountedRef = useRef(true);
+  const inFlightRef = useRef(false);
 
   // Check if user is admin
   useEffect(() => {
@@ -37,7 +43,7 @@ const AdminDashboard = () => {
       }
 
       try {
-        const response = await axios.get(`${API_URL}/api/users/${user.uid}`);
+        const response = await api.get(`/api/users/${user.uid}`);
         const role = response.data.user?.role;
         setUserRole(role);
 
@@ -60,10 +66,20 @@ const AdminDashboard = () => {
     checkAdmin();
   }, [user, navigate]);
 
-  const loadDashboardData = async () => {
+  // Mount/unmount tracker so async callbacks don't setState after unmount.
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => { isMountedRef.current = false; };
+  }, []);
+
+  const loadDashboardData = useCallback(async ({ silent = false } = {}) => {
+    if (!user?.uid) return;
+    if (inFlightRef.current) return;
+    inFlightRef.current = true;
+    if (!silent) setRefreshing(true);
     const loadStats = async () => {
       try {
-        const statsRes = await axios.get(`${API_URL}/api/admin/stats`, {
+        const statsRes = await api.get(`/api/admin/stats`, {
           params: { userId: user.uid }
         });
         if (statsRes.data && statsRes.data.stats) {
@@ -79,7 +95,7 @@ const AdminDashboard = () => {
 
     const loadUsers = async () => {
       try {
-        const usersRes = await axios.get(`${API_URL}/api/admin/users`, {
+        const usersRes = await api.get(`/api/admin/users`, {
           params: { userId: user.uid, limit: 50 }
         });
         if (usersRes.data && usersRes.data.users) {
@@ -95,7 +111,7 @@ const AdminDashboard = () => {
 
     const loadBookings = async () => {
       try {
-        const bookingsRes = await axios.get(`${API_URL}/api/admin/bookings`, {
+        const bookingsRes = await api.get(`/api/admin/bookings`, {
           params: { userId: user.uid, limit: 50 }
         });
         if (bookingsRes.data && bookingsRes.data.bookings) {
@@ -111,7 +127,7 @@ const AdminDashboard = () => {
 
     const loadPredictions = async () => {
       try {
-        const predictionsRes = await axios.get(`${API_URL}/api/admin/predictions`, {
+        const predictionsRes = await api.get(`/api/admin/predictions`, {
           params: { userId: user.uid, limit: 50 }
         });
         if (predictionsRes.data && predictionsRes.data.predictions) {
@@ -127,7 +143,7 @@ const AdminDashboard = () => {
 
     const loadDetections = async () => {
       try {
-        const detectionsRes = await axios.get(`${API_URL}/api/admin/detections`, {
+        const detectionsRes = await api.get(`/api/admin/detections`, {
           params: { userId: user.uid, limit: 50 }
         });
         if (detectionsRes.data && detectionsRes.data.detections) {
@@ -143,7 +159,7 @@ const AdminDashboard = () => {
 
     const loadKnowledgeTips = async () => {
       try {
-        const knowledgeRes = await axios.get(`${API_URL}/api/admin/knowledge`, {
+        const knowledgeRes = await api.get(`/api/admin/knowledge`, {
           params: { userId: user.uid, limit: 50 }
         });
         if (knowledgeRes.data && knowledgeRes.data.tips) {
@@ -159,7 +175,7 @@ const AdminDashboard = () => {
 
     const loadSellItems = async () => {
       try {
-        const sellItemsRes = await axios.get(`${API_URL}/api/admin/sell-items`, {
+        const sellItemsRes = await api.get(`/api/admin/sell-items`, {
           params: { userId: user.uid, limit: 50 }
         });
         if (sellItemsRes.data && sellItemsRes.data.items) {
@@ -173,20 +189,50 @@ const AdminDashboard = () => {
       }
     };
 
-    await Promise.all([
-      loadStats(),
-      loadUsers(),
-      loadBookings(),
-      loadPredictions(),
-      loadDetections(),
-      loadKnowledgeTips(),
-      loadSellItems()
-    ]);
-  };
+    try {
+      await Promise.all([
+        loadStats(),
+        loadUsers(),
+        loadBookings(),
+        loadPredictions(),
+        loadDetections(),
+        loadKnowledgeTips(),
+        loadSellItems()
+      ]);
+      if (isMountedRef.current) setLastUpdated(new Date());
+    } finally {
+      inFlightRef.current = false;
+      if (isMountedRef.current) setRefreshing(false);
+    }
+  }, [user?.uid]);
+
+  // Real-time refresh: poll every REFRESH_INTERVAL_MS while autoRefresh is on
+  // and the tab is visible. Also refresh when the tab regains focus.
+  useEffect(() => {
+    if (userRole !== 'admin' || !autoRefresh) return undefined;
+
+    const tick = () => {
+      if (document.visibilityState === 'visible') {
+        loadDashboardData({ silent: true });
+      }
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        loadDashboardData({ silent: true });
+      }
+    };
+
+    const id = setInterval(tick, REFRESH_INTERVAL_MS);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [userRole, autoRefresh, loadDashboardData]);
 
   const updateBookingStatus = async (bookingId, newStatus) => {
     try {
-      await axios.put(`${API_URL}/api/bookings/${bookingId}`, { status: newStatus });
+      await api.put(`/api/bookings/${bookingId}`, { status: newStatus });
       await loadDashboardData();
     } catch (error) {
       console.error('Error updating booking:', error);
@@ -196,7 +242,7 @@ const AdminDashboard = () => {
 
   const updateUserRole = async (userId, newRole) => {
     try {
-      await axios.put(`${API_URL}/api/admin/users/${userId}/role`, 
+      await api.put(`/api/admin/users/${userId}/role`,
         { role: newRole },
         { params: { userId: user.uid } }
       );
@@ -244,150 +290,192 @@ const AdminDashboard = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-green-50 to-blue-50">
       {/* Header */}
-      <div className="bg-gradient-to-r from-green-600 via-green-700 to-green-800 text-white shadow-xl sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="bg-gradient-to-r from-green-600 via-green-700 to-green-800 text-white shadow-md sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3">
-                <FaUserShield className="text-3xl" />
+            <div className="flex items-center gap-2.5">
+              <div className="bg-white/20 backdrop-blur-sm rounded-lg p-2">
+                <FaUserShield className="text-lg" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold flex items-center gap-2">
+                <h1 className="text-lg font-bold flex items-center gap-2">
                   Admin Dashboard
                 </h1>
-                <p className="text-green-100 mt-1 text-sm">Manage your CropMate platform</p>
+                <p className="text-green-100 text-[11px]">Manage your CropMate platform</p>
               </div>
             </div>
-            <div className="hidden md:flex items-center gap-4">
+            <div className="hidden md:flex items-center gap-3">
+              <div className="flex items-center gap-2 mr-1">
+                <button
+                  onClick={() => loadDashboardData()}
+                  disabled={refreshing}
+                  title="Refresh now"
+                  className={`p-2 rounded-full bg-white/20 hover:bg-white/30 transition ${refreshing ? 'opacity-60 cursor-not-allowed' : ''}`}
+                >
+                  <FaSyncAlt className={`text-xs ${refreshing ? 'animate-spin' : ''}`} />
+                </button>
+                <button
+                  onClick={() => setAutoRefresh((v) => !v)}
+                  title={autoRefresh ? 'Auto-refresh on (click to pause)' : 'Auto-refresh paused (click to resume)'}
+                  className={`px-2 py-0.5 rounded-full text-[10px] font-bold border transition ${autoRefresh ? 'bg-green-500/30 border-green-300/40 text-white' : 'bg-white/10 border-white/20 text-white/70'}`}
+                >
+                  {autoRefresh ? 'LIVE' : 'PAUSED'}
+                </button>
+                <span className="text-[10px] text-green-100/80 hidden lg:inline">
+                  {lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString()}` : ''}
+                </span>
+              </div>
               <div className="text-right">
-                <p className="text-sm text-green-100">Welcome back,</p>
-                <p className="font-semibold">{user?.displayName || user?.email}</p>
+                <p className="text-[11px] text-green-100">Welcome back,</p>
+                <p className="text-xs font-semibold">{user?.displayName || user?.email}</p>
               </div>
               {user?.photoURL && (
-                <img 
-                  src={user.photoURL} 
-                  alt="Profile" 
-                  className="w-12 h-12 rounded-full border-2 border-white/30"
+                <img
+                  src={user.photoURL}
+                  alt="Profile"
+                  className="w-9 h-9 rounded-full border-2 border-white/30"
                 />
               )}
             </div>
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden text-white p-2"
+              className="md:hidden text-white p-1.5"
             >
-              {mobileMenuOpen ? <FaClose className="text-2xl" /> : <FaBars className="text-2xl" />}
+              {mobileMenuOpen ? <FaClose className="text-base" /> : <FaBars className="text-base" />}
             </button>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        {/* Mobile refresh bar */}
+        <div className="md:hidden flex items-center justify-between mb-3 bg-white rounded-lg shadow-sm px-3 py-2 border border-gray-100">
+          <span className="text-[11px] text-gray-500">
+            {lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString()}` : 'Loading…'}
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setAutoRefresh((v) => !v)}
+              className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${autoRefresh ? 'bg-green-100 border-green-300 text-green-700' : 'bg-gray-100 border-gray-200 text-gray-500'}`}
+            >
+              {autoRefresh ? 'LIVE' : 'PAUSED'}
+            </button>
+            <button
+              onClick={() => loadDashboardData()}
+              disabled={refreshing}
+              className={`p-1.5 rounded-full bg-green-600 text-white ${refreshing ? 'opacity-60' : 'hover:bg-green-700'}`}
+            >
+              <FaSyncAlt className={`text-xs ${refreshing ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
+        </div>
+
         {/* Stats Cards */}
         {stats ? (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              <div className="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-blue-500 transform transition-all hover:scale-105 hover:shadow-xl">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+              <div className="bg-white rounded-xl shadow-sm p-3 border-l-4 border-blue-500 transform transition-all hover:scale-105 hover:shadow-xl">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-gray-500 text-sm font-medium uppercase tracking-wide">Total Users</p>
-                    <p className="text-4xl font-bold text-gray-800 mt-2">{stats.totalUsers || 0}</p>
+                    <p className="text-gray-500 text-[11px] font-medium uppercase tracking-wide">Total Users</p>
+                    <p className="text-2xl font-bold text-gray-800 mt-1">{stats.totalUsers || 0}</p>
                     <div className="flex items-center gap-1 mt-2">
                       <FaArrowUp className="text-green-500 text-xs" />
                       <p className="text-xs text-green-600 font-semibold">+{stats.recentUsers || 0} this week</p>
                     </div>
                   </div>
-                  <div className="bg-blue-100 rounded-full p-4">
-                    <FaUsers className="text-3xl text-blue-600" />
+                  <div className="bg-blue-100 rounded-full p-2">
+                    <FaUsers className="text-lg text-blue-600" />
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-green-500 transform transition-all hover:scale-105 hover:shadow-xl">
+              <div className="bg-white rounded-xl shadow-sm p-3 border-l-4 border-green-500 transform transition-all hover:scale-105 hover:shadow-xl">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-gray-500 text-sm font-medium uppercase tracking-wide">Total Bookings</p>
-                    <p className="text-4xl font-bold text-gray-800 mt-2">{stats.totalBookings || 0}</p>
+                    <p className="text-gray-500 text-[11px] font-medium uppercase tracking-wide">Total Bookings</p>
+                    <p className="text-2xl font-bold text-gray-800 mt-1">{stats.totalBookings || 0}</p>
                     <div className="flex items-center gap-1 mt-2">
                       <FaArrowUp className="text-green-500 text-xs" />
                       <p className="text-xs text-green-600 font-semibold">+{stats.recentBookings || 0} this week</p>
                     </div>
                   </div>
-                  <div className="bg-green-100 rounded-full p-4">
-                    <FaClipboardList className="text-3xl text-green-600" />
+                  <div className="bg-green-100 rounded-full p-2">
+                    <FaClipboardList className="text-lg text-green-600" />
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-yellow-500 transform transition-all hover:scale-105 hover:shadow-xl">
+              <div className="bg-white rounded-xl shadow-sm p-3 border-l-4 border-yellow-500 transform transition-all hover:scale-105 hover:shadow-xl">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-gray-500 text-sm font-medium uppercase tracking-wide">Crop Predictions</p>
-                    <p className="text-4xl font-bold text-gray-800 mt-2">{stats.totalPredictions || 0}</p>
+                    <p className="text-gray-500 text-[11px] font-medium uppercase tracking-wide">Crop Predictions</p>
+                    <p className="text-2xl font-bold text-gray-800 mt-1">{stats.totalPredictions || 0}</p>
                   </div>
-                  <div className="bg-yellow-100 rounded-full p-4">
-                    <FaSeedling className="text-3xl text-yellow-600" />
+                  <div className="bg-yellow-100 rounded-full p-2">
+                    <FaSeedling className="text-lg text-yellow-600" />
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-red-500 transform transition-all hover:scale-105 hover:shadow-xl">
+              <div className="bg-white rounded-xl shadow-sm p-3 border-l-4 border-red-500 transform transition-all hover:scale-105 hover:shadow-xl">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-gray-500 text-sm font-medium uppercase tracking-wide">Disease Detections</p>
-                    <p className="text-4xl font-bold text-gray-800 mt-2">{stats.totalDetections || 0}</p>
+                    <p className="text-gray-500 text-[11px] font-medium uppercase tracking-wide">Disease Detections</p>
+                    <p className="text-2xl font-bold text-gray-800 mt-1">{stats.totalDetections || 0}</p>
                   </div>
-                  <div className="bg-red-100 rounded-full p-4">
-                    <FaBug className="text-3xl text-red-600" />
+                  <div className="bg-red-100 rounded-full p-2">
+                    <FaBug className="text-lg text-red-600" />
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              <div className="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-purple-500 transform transition-all hover:scale-105 hover:shadow-xl">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+              <div className="bg-white rounded-xl shadow-sm p-3 border-l-4 border-purple-500 transform transition-all hover:scale-105 hover:shadow-xl">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-gray-500 text-sm font-medium uppercase tracking-wide">Knowledge Tips</p>
-                    <p className="text-4xl font-bold text-gray-800 mt-2">{stats.totalKnowledgeTips || 0}</p>
+                    <p className="text-gray-500 text-[11px] font-medium uppercase tracking-wide">Knowledge Tips</p>
+                    <p className="text-2xl font-bold text-gray-800 mt-1">{stats.totalKnowledgeTips || 0}</p>
                   </div>
-                  <div className="bg-purple-100 rounded-full p-4">
-                    <FaBook className="text-3xl text-purple-600" />
+                  <div className="bg-purple-100 rounded-full p-2">
+                    <FaBook className="text-lg text-purple-600" />
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-indigo-500 transform transition-all hover:scale-105 hover:shadow-xl">
+              <div className="bg-white rounded-xl shadow-sm p-3 border-l-4 border-indigo-500 transform transition-all hover:scale-105 hover:shadow-xl">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-gray-500 text-sm font-medium uppercase tracking-wide">Sell Items</p>
-                    <p className="text-4xl font-bold text-gray-800 mt-2">{stats.totalSellItems || 0}</p>
+                    <p className="text-gray-500 text-[11px] font-medium uppercase tracking-wide">Sell Items</p>
+                    <p className="text-2xl font-bold text-gray-800 mt-1">{stats.totalSellItems || 0}</p>
                   </div>
-                  <div className="bg-indigo-100 rounded-full p-4">
-                    <FaShoppingBag className="text-3xl text-indigo-600" />
+                  <div className="bg-indigo-100 rounded-full p-2">
+                    <FaShoppingBag className="text-lg text-indigo-600" />
                   </div>
                 </div>
               </div>
 
-              <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-2xl shadow-lg p-6 border border-yellow-200">
+              <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl shadow-sm p-3 border border-yellow-200">
                 <div className="flex items-center gap-4">
                   <div className="bg-yellow-200 rounded-full p-3">
-                    <FaClock className="text-2xl text-yellow-700" />
+                    <FaClock className="text-base text-yellow-700" />
                   </div>
                   <div>
                     <p className="text-sm text-gray-600 font-medium">Pending</p>
-                    <p className="text-3xl font-bold text-yellow-700">{stats.pendingBookings || 0}</p>
+                    <p className="text-xl font-bold text-yellow-700">{stats.pendingBookings || 0}</p>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl shadow-lg p-6 border border-green-200">
+              <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl shadow-sm p-3 border border-green-200">
                 <div className="flex items-center gap-4">
                   <div className="bg-green-200 rounded-full p-3">
-                    <FaCheckCircle className="text-2xl text-green-700" />
+                    <FaCheckCircle className="text-base text-green-700" />
                   </div>
                   <div>
                     <p className="text-sm text-gray-600 font-medium">Completed</p>
-                    <p className="text-3xl font-bold text-green-700">{stats.completedBookings || 0}</p>
+                    <p className="text-xl font-bold text-green-700">{stats.completedBookings || 0}</p>
                   </div>
                 </div>
               </div>
@@ -443,7 +531,7 @@ const AdminDashboard = () => {
             {/* Overview Tab */}
             {activeTab === 'overview' && (
               <div>
-                <h2 className="text-3xl font-bold text-gray-800 mb-6">Platform Overview</h2>
+                <h2 className="text-base font-bold text-gray-800 mb-3">Platform Overview</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200">
                     <h3 className="font-semibold text-gray-800 mb-4 text-lg flex items-center gap-2">
@@ -505,7 +593,7 @@ const AdminDashboard = () => {
               <div>
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                   <div>
-                    <h2 className="text-3xl font-bold text-gray-800">All Users</h2>
+                    <h2 className="text-xl font-bold text-gray-800">All Users</h2>
                     <p className="text-sm text-gray-500 mt-1">Total: {users.length} users</p>
                   </div>
                   <div className="relative w-full sm:w-64">
@@ -587,7 +675,7 @@ const AdminDashboard = () => {
             {activeTab === 'bookings' && (
               <div>
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                  <h2 className="text-3xl font-bold text-gray-800">All Bookings</h2>
+                  <h2 className="text-xl font-bold text-gray-800">All Bookings</h2>
                   <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                     <div className="relative">
                       <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -694,7 +782,7 @@ const AdminDashboard = () => {
             {/* Predictions Tab */}
             {activeTab === 'predictions' && (
               <div>
-                <h2 className="text-3xl font-bold text-gray-800 mb-6">Crop Predictions</h2>
+                <h2 className="text-base font-bold text-gray-800 mb-3">Crop Predictions</h2>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left">
                     <thead className="bg-gradient-to-r from-gray-100 to-gray-50">
@@ -723,7 +811,7 @@ const AdminDashboard = () => {
                             <td className="px-4 py-4">{pred.userName || pred.userEmail || 'N/A'}</td>
                             <td className="px-4 py-4">{pred.soilType}</td>
                             <td className="px-4 py-4 hidden md:table-cell">{pred.phLevel}</td>
-                            <td className="px-4 py-4 hidden md:table-cell">{pred.temperature}°C</td>
+                            <td className="px-4 py-4 hidden md:table-cell">{pred.temperature}Â°C</td>
                             <td className="px-4 py-4 hidden lg:table-cell">{pred.humidity}%</td>
                             <td className="px-4 py-4 text-sm text-gray-500">
                               {new Date(pred.createdAt).toLocaleDateString()}
@@ -740,7 +828,7 @@ const AdminDashboard = () => {
             {/* Detections Tab */}
             {activeTab === 'detections' && (
               <div>
-                <h2 className="text-3xl font-bold text-gray-800 mb-6">Disease Detections</h2>
+                <h2 className="text-base font-bold text-gray-800 mb-3">Disease Detections</h2>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left">
                     <thead className="bg-gradient-to-r from-gray-100 to-gray-50">
@@ -790,7 +878,7 @@ const AdminDashboard = () => {
             {/* Knowledge Tips Tab */}
             {activeTab === 'knowledge' && (
               <div>
-                <h2 className="text-3xl font-bold text-gray-800 mb-6">Knowledge Tips</h2>
+                <h2 className="text-base font-bold text-gray-800 mb-3">Knowledge Tips</h2>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left">
                     <thead className="bg-gradient-to-r from-gray-100 to-gray-50">
@@ -843,7 +931,7 @@ const AdminDashboard = () => {
             {/* Sell Items Tab */}
             {activeTab === 'sell-items' && (
               <div>
-                <h2 className="text-3xl font-bold text-gray-800 mb-6">Sell Items</h2>
+                <h2 className="text-base font-bold text-gray-800 mb-3">Sell Items</h2>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left">
                     <thead className="bg-gradient-to-r from-gray-100 to-gray-50">
@@ -908,3 +996,4 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
+

@@ -1,0 +1,25 @@
+{
+  "version": 2,
+  "buildCommand": "cd cropmate-frontend && npm install && npm run build",
+  "outputDirectory": "cropmate-frontend/dist",
+  "installCommand": "cd cropmate-backend && npm install",
+  "framework": null,
+  "functions": {
+    "cropmate-backend/api/index.js": {
+      "memory": 512,
+      "maxDuration": 30
+    }
+  },
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/cropmate-backend/api/index.js" },
+    { "source": "/((?!assets|.*\\..*).*)", "destination": "/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    }
+  ]
+}
