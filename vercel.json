@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "cd cropmate-frontend && npm install && npx vite build",
+  "buildCommand": "cd cropmate-frontend && npm install && node node_modules/vite/bin/vite.js build",
   "outputDirectory": "cropmate-frontend/dist",
   "installCommand": "cd cropmate-backend && npm install",
   "framework": null,
